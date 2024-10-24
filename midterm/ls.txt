@@ -1,0 +1,60 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <ctype.h>  // 대문자/소문자 변환을 위한 라이브러리
+
+/* 파일 복사 프로그램 (대문자/소문자 변환 포함) */
+int main(int argc, char *argv[])
+{
+   int fd1, fd2, n;
+   char buf[BUFSIZ];
+   int to_upper = 0, to_lower = 0;
+
+   if (argc < 3 || argc > 4) {
+      fprintf(stderr, "Usage: %s source_file destination_file [0/1/2]\n", argv[0]);
+      exit(1);
+   }
+
+   // 사용자의 옵션에 따라 대문자/소문자 변환 설정
+   if (argc == 4) {
+      if (strcmp(argv[3], "1") == 0) {
+         to_upper = 1;  // "1" 입력 시 대문자 변환
+      } else if (strcmp(argv[3], "2") == 0) {
+         to_lower = 1;  // "2" 입력 시 소문자 변환
+      } else if (strcmp(argv[3], "0") != 0) {  // "0"은 변환 없이 복사
+         fprintf(stderr, "Invalid option. Use '0' for no conversion, '1' for upper, or '2' for lower.\n");
+         exit(1);
+      }
+   }
+
+   // 원본 파일 열기
+   if ((fd1 = open(argv[1], O_RDONLY)) == -1) {
+      perror(argv[1]);
+      exit(2);
+   }
+
+   // 목적 파일 열기
+   if ((fd2 = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0644)) == -1) {
+      perror(argv[2]);
+      exit(3);
+   }
+
+   // 파일 읽기 및 변환
+   while ((n = read(fd1, buf, BUFSIZ)) > 0) {
+      // 대문자/소문자 변환 (0이면 변환하지 않음)
+      for (int i = 0; i < n; i++) {
+         if (to_upper) {
+            buf[i] = toupper(buf[i]);  // 대문자로 변환
+         } else if (to_lower) {
+            buf[i] = tolower(buf[i]);  // 소문자로 변환
+         }
+      }
+      write(fd2, buf, n);  // 내용을 목적 파일에 씀 (변환이 없으면 그대로 씀)
+   }
+
+   close(fd1);
+   close(fd2);
+   exit(0);
+}
+
