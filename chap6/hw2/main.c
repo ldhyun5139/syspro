@@ -3,79 +3,82 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <time.h>
 #include <grp.h>
 #include <pwd.h>
 #include <string.h>
 
-char type(mode_t);
-char *perm(mode_t);
-void printStat(char*, char*, struct stat*);
+void printStat(char *pathname, char *file, struct stat *st, int show_inode, int show_quote, int show_type);
 
-int main(int argc, char **argv) {
+int main(int argc, char *argv[])
+{
     DIR *dp;
-    char *dir;
     struct stat st;
     struct dirent *d;
-    char path[BUFSIZ + 1];
+    char path[BUFSIZ+1];
+    char *dir = ".";
+    int show_inode = 0, show_quote = 0, show_type = 0;
 
-    if (argc == 1)
-        dir = ".";
-    else
-        dir = argv[1];
+ 
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-i") == 0)
+            show_inode = 1;
+        else if (strcmp(argv[i], "-Q") == 0)
+            show_quote = 1;
+        else if (strcmp(argv[i], "-p") == 0)
+            show_type = 1;
+        else
+            dir = argv[i];
+    }
 
     if ((dp = opendir(dir)) == NULL) {
         perror(dir);
-        exit(EXIT_FAILURE);
+        exit(1);
     }
 
     while ((d = readdir(dp)) != NULL) {
         sprintf(path, "%s/%s", dir, d->d_name);
         if (lstat(path, &st) < 0) {
             perror(path);
-        } else {
-            printStat(path, d->d_name, &st);
+            continue;
         }
+        printStat(path, d->d_name, &st, show_inode, show_quote, show_type);
     }
 
     closedir(dp);
-    exit(EXIT_SUCCESS);
+    exit(0);
 }
 
-void printStat(char *pathname, char *file, struct stat *st) {
-    printf("%5lld ", (long long)st->st_blocks);
-    printf("%c%s ", type(st->st_mode), perm(st->st_mode));
-    printf("%3lu ", (unsigned long)st->st_nlink);
-    printf("%s %s ", getpwuid(st->st_uid)->pw_name, getgrgid(st->st_gid)->gr_name);
-    printf("%9lld ", (long long)st->st_size);
-    printf("%.12s ", ctime(&st->st_mtime) + 4);
-    printf("%s\n", file);
+void printStat(char *pathname, char *file, struct stat *st, int show_inode, int show_quote, int show_type)
+{
+    
+   
+    printf("%5o ", st->st_mode & (S_IRWXU | S_IRWXG | S_IRWXO)); 
+    printf("%s ", getpwuid(st->st_uid)->pw_name);    
+    printf("%s ", getgrgid(st->st_gid)->gr_name);    
+    printf("%ld ", st->st_size);     
+
+
+	char timebuf[80];
+    strftime(timebuf, sizeof(timebuf), "%b %d %H:%M", localtime(&st->st_mtime));
+    printf("%s ", timebuf);
+     if (show_inode)
+        printf("%ld ", st->st_ino);  
+
+    
+    if (show_quote)
+        printf("\"%s\" ", file);
+    else
+        printf("%s", file);
+
+    
+    if (show_type && S_ISDIR(st->st_mode))
+        printf("/");
+
+
+    printf("\n");
 }
 
-char type(mode_t mode) {
-    if (S_ISREG(mode)) return '-';
-    if (S_ISDIR(mode)) return 'd';
-    if (S_ISCHR(mode)) return 'c';
-    if (S_ISBLK(mode)) return 'b';
-    if (S_ISLNK(mode)) return 'l';
-    if (S_ISFIFO(mode)) return 'p';
-    if (S_ISSOCK(mode)) return 's';
-    return '?';
-}
 
-char* perm(mode_t mode) {
-    static char perms[11];
-    strcpy(perms, "----------");
 
-    if (mode & S_IRUSR) perms[0] = 'r';
-    if (mode & S_IWUSR) perms[1] = 'w';
-    if (mode & S_IXUSR) perms[2] = 'x';
-    if (mode & S_IRGRP) perms[3] = 'r';
-    if (mode & S_IWGRP) perms[4] = 'w';
-    if (mode & S_IXGRP) perms[5] = 'x';
-    if (mode & S_IROTH) perms[6] = 'r';
-    if (mode & S_IWOTH) perms[7] = 'w';
-    if (mode & S_IXOTH) perms[8] = 'x';
-
-    return perms;
-}
