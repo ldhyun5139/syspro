@@ -5,22 +5,34 @@ struct node {
     int data;
     struct node *next;
 };
-
 void addq(struct node **head, struct node **tail, int data) {
-    struct node *new_node = (struct node *)malloc(sizeof(struct node));
-    new_node->data = data;
-    new_node->next = NULL;
+    struct node *n_node = (struct node *)malloc(sizeof(struct node));
+    
+
+	n_node->data = data;
+    n_node->next = NULL;
     if (*tail == NULL) {
-        *head = new_node;
-        *tail = new_node;
-    } else {
-        (*tail)->next = new_node;
-        *tail = new_node;
+        *head = n_node;
+        *tail = n_node;
+    } 
+
+
+
+	else {
+
+        (*tail)->next = n_node;
+        *tail = n_node;
     }
 }
 
+
+
+
 int delete(struct node **head, struct node **tail) {
     if (*head == NULL) {
+
+
+
         printf("Queue is empty.\n");
         return -1;
     }
