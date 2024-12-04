@@ -1,61 +1,75 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-
-
-
+#include <ctype.h>
 
 struct node {
     int data;
     struct node *next;
 };
+// push stack
 void push(struct node **top, int data) {
-	struct node *n_node = (struct node *)malloc(sizeof(struct node));
-    n_node->data = data;
-    n_node->next = *top;
-    *top = n_node;
+    struct node *new_node = (struct node *)malloc(sizeof(struct node));
+    new_node->data = data;
+    new_node->next = *top;
+    *top = new_node;
 }
-int pop(struct node **top) {
+// delet stcak
+int pop(struct node **top){  
     if (*top == NULL) {
-        printf("Stack is empty.\n");
+        printf("Stack is empty\n");
         return -1;
     }
     struct node *temp = *top;
     int popped_data = temp->data;
     *top = (*top)->next;
- 
-
-	free(temp);
+    free(temp);
     return popped_data;
 }
+
 void print_stack(struct node *top) {
-    struct node *temp = top;
-
-
-    printf("Print Stack\n");
-
-
-    while (temp != NULL) {
-        printf("%d\n", temp->data);
-        temp = temp->next;
+    struct node *current = top;
+    while (current != NULL) {
+        printf("%d\n", current->data);
+        current = current->next;
     }
 }
-int main() {
-    struct node *top = NULL;
-    int data;
 
-    while (1) {
-        if (scanf("%d", &data) != 1 || data <= 0) {
-            printf("Print Stack\n");
-            print_stack(top);
+void process_input(struct node **top, char *input) {
+    int is_valid_number = 1;
+    for (int i = 0; input[i] != '\0'; i++) {
+        if (!isdigit(input[i])) {
+            is_valid_number = 0;
             break;
         }
-        push(&top, data);
     }
 
-    while (top != NULL) {
-        pop(&top);
+    if (is_valid_number) {
+        int num = atoi(input);
+        push(top, num);
+    }
+
+	else {
+		printf("Print stack\n");
+
+        print_stack(*top);
+    }
+}
+
+int main() {
+    struct node *top = NULL;
+    char input[100];
+
+    while (1) {
+        fgets(input, sizeof(input), stdin);
+        input[strcspn(input, "\n")] = '\0';
+
+        if (input[0] == '\0') {
+            break;
+        }
+
+        process_input(&top, input);
     }
 
     return 0;
 }
+
