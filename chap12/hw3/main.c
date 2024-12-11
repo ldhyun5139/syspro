@@ -1,54 +1,34 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
-#include <ctype.h>
+#include <unistd.h>
+#define READ 0	
+#define WRITE 1
+int main(int argc, char* argv[]) 
+{
+    char str[1024];
+    char *command1, *command2;
+    int fd[2];
 
-#define MAXLINE 100
-
-int main(){
-	int fd[2];
-	int pid1, pid2;
-
-	pipe(fd);
-	printf("parent process start \n");
-	if((pid1 = fork())==0){
-	close(fd[0]);
-
-	char input[MAXLINE];
-	printf("input string: ");
-	fgets(input, MAXLINE, stdin);
-	input[strcspn(input, "\n")] = '\0';
-
-	write(fd[1], input, strlen(input) +1);
-	close(fd[1]);
-	exit(0);
-	}
-
-	if((pid2=fork())==0){
-	
-	close(fd[1]);
-
-	char buffer[MAXLINE];
-	read(fd[0], buffer, MAXLINE);
-	close(fd[0]);
-
-	 for (int i = 0; buffer[i]; i++) {
-            buffer[i] = toupper(buffer[i]);
-        }
-
-        printf("%s\n", buffer);
-        exit(0);
-	}
-
-	close(fd[0]);
-	close(fd[1]);
-
-	wait(NULL);
-	wait(NULL);
-
-	return 0;
-
-
-
+    printf("[shell]");
+    fgets(str,sizeof(str),stdin);
+    str[strlen(str)-1] ='\0';
+    if(strchr(str,'|') != NULL) { 	 
+         command1 = strtok (str,"| ");
+         command2 = strtok (NULL, "| ");
+    } 
+pipe(fd);
+if(fork()==0){
+	close(fd[READ]);
+	dup2(fd[WRITE],1);
+	close(fd[WRITE]);
+	execlp(command1, command1,NULL);
+	perror("pipe");
 }
+else{
+	close(fd[WRITE]);
+	dup2(fd[READ],0);
+	close(fd[READ]);
+	execlp(command2, command2,NULL);
+	perror("pipe");
+}}
+
